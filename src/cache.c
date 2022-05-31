@@ -6,8 +6,6 @@
 //  described in the README                               //
 //========================================================//
 #include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include "cache.h"
 
 //
@@ -64,53 +62,51 @@ uint64_t l2cachePenalties; // L2$ penalties
 //https://github.com/Fnjn
 
 
-typedef struct Block
+struct Block
 {
-  struct Block *previous, *next;
-
   uint32_t value;
-}Block;
+  struct Block *previous, *next;
+};
+typedef struct Block Block;
 
-typedef struct Set
+
+struct Set
 {
   uint32_t size;
   Block *front, *back;
-}Set;
+};
+typedef struct Set Set;
 
 Block* create_Block(uint32_t value)
 {
   // define the block
-  Block *block = (Block*)malloc(sizeof(Block));
-  // input the block specifications
-  
+  Block *block = (Block*)malloc(sizeof(Block));  
   //default to be null, will change later if we push
-  block->previous = NULL;
-  block->next = NULL;
-
   block->value = value;
+  block->next = NULL;
+  block->previous = NULL;  
   return block;
 }
-
 
 void setPush(Set* set,  Block *block)
 {
   // If size of the set greater than 0
   if(set->size > 0)
   { 
-    set->back->next = block;
-    block->previous = set->back;
-    set->back = block;
+    (set->back)->next = block;
+    (block->previous) = (set->back);
+    (set->back) = block;
   }
   // If size = 0, which means it is empty
-  else if (set->size ==0)
+  else if ((set->size) ==0)
   { 
-    set->front = block;
-    set->back = block;
+    (set->front) = block;
+    (set->back) = block;
   }
   else
   {
-    set->front = block;
-    set->back = block;
+    (set->front) = block;
+    (set->back) = block;
   }
   (set->size)++;
 }
@@ -118,49 +114,48 @@ void setPush(Set* set,  Block *block)
 // Pop front
 void setPop(Set* set){
   // If set is empty
-  if(set->size == 0)
+  if((set->size) == 0)
     return;
 //pop out the first one
   Block *b_pop = set->front;
-  set->front = b_pop->next;
+  (set->front) = (b_pop->next);
 
   if(set->front)
-    set->front->previous = NULL;
+    ((set->front)->previous) = NULL;
   (set->size)--;
   free(b_pop);
 }
 
-Block* setPopIndex(Set* set, int index){
- // pop out a pecific
-  if(index > set->size || index<0)
+Block* setPopIndex(Set* set, int idx){
+ // pop out a specific idx from cache
+  if(idx > (set->size) || idx<0)
+  //invalid input return null
     return NULL;
-
-  Block *b_pop = set->front;
-
-  if(set->size == 1){
-    set->front = NULL;
-    set->back = NULL;
+  Block *b_pop = (set->front);
+  if((set->size) == 1){
+    (set->front) = NULL;
+    (set->back) = NULL;
   }
-  else if (index == 0)
+  else if (idx == 0)
   {
-    set->front = b_pop->next;
-    set->front->previous = NULL;
+    (set->front) = (b_pop->next);
+    ((set->front)->previous) = NULL;
   }
-  else if (index == set->size - 1)
+  else if (idx == ((set->size) - 1))
   {
-    b_pop = set->back;
-    set->back = set->back->previous;
-    set->back->next = NULL;
+    b_pop = (set->back);
+    (set->back) = ((set->back)->previous);
+    ((set->back)->next) = NULL;
   }
   else{
-    for(int i=0; i<index; i++)
-      b_pop = b_pop->next;
-    b_pop->previous->next = b_pop->next;
-    b_pop->next->previous = b_pop->previous;
+    for(int i=0; i<idx; i++)
+      b_pop = (b_pop->next);
+    ((b_pop->previous)->next) = (b_pop->next);
+    ((b_pop->next)->previous) = (b_pop->previous);
   }
 
-  b_pop->next = NULL;
-  b_pop->previous = NULL;
+  (b_pop->next) = NULL;
+  (b_pop->previous) = NULL;
 
   (set->size)--;
   //Block ownership transfer to caller
@@ -176,16 +171,16 @@ uint32_t offset_size;
 uint32_t offset_mask;
 
 Set *icache;
-uint32_t icache_index_mask;
-uint32_t icache_index_size;
+uint32_t icache_idx_mask;
+uint32_t icache_idx_size;
 
 Set *dcache;
-uint32_t dcache_index_mask;
-uint32_t dcache_index_size;
+uint32_t dcache_idx_mask;
+uint32_t dcache_idx_size;
 
 Set *l2cache;
-uint32_t l2cache_index_mask;
-uint32_t l2cache_index_size;
+uint32_t l2cache_idx_mask;
+uint32_t l2cache_idx_size;
 
 
 //------------------------------------//
@@ -194,7 +189,7 @@ uint32_t l2cache_index_size;
 
 // Initialize the Cache Hierarchy
 //
-void
+void 
 init_cache()
 {
   // Initialize cache stats
@@ -212,26 +207,27 @@ init_cache()
   //TODO: Initialize Cache Simulator Data Structures
   //
 
-  icache = (Set*)malloc(sizeof(Set) * icacheSets);
-  dcache = (Set*)malloc(sizeof(Set) * dcacheSets);
-  l2cache = (Set*)malloc(sizeof(Set) * l2cacheSets);
+  icache = (Set*)malloc(icacheSets * sizeof(Set));
+  dcache = (Set*)malloc(dcacheSets * sizeof(Set) );
+  l2cache = (Set*)malloc(l2cacheSets * sizeof(Set));
 
 //init the sets
-  for(int i=0; i<icacheSets; i++)
+
+  for(int i=0; i <icacheSets; i++)
   {
     icache[i].size = 0;
     icache[i].front = NULL;
     icache[i].back = NULL;
   }
 //init the sets
-  for(int i=0; i<dcacheSets; i++)
+  for(int i=0; i <dcacheSets; i++)
   {
     dcache[i].size = 0;
     dcache[i].front = NULL;
     dcache[i].back = NULL;
   }
 //init the sets
-  for(int i=0; i<l2cacheSets; i++)
+  for(int i=0; i <l2cacheSets; i++)
   {
     l2cache[i].size = 0;
     l2cache[i].front = NULL;
@@ -239,46 +235,50 @@ init_cache()
   }
 
   offset_size = (uint32_t)log2(blocksize);
-  offset_size += ((1<<offset_size)==blocksize)? 0 : 1;
+  if ((1<<offset_size)==blocksize)
+  {
+    offset_size += 0;
+  }
+  else
+  {
+    offset_size += 1;
+  }
   offset_mask = (1 << offset_size) - 1;
+  icache_idx_size = (uint32_t)log2(icacheSets);
 
-  icache_index_size = (uint32_t)log2(icacheSets);
-
-  if ((1<<icache_index_size) == icacheSets){
-      icache_index_size += 0;
+  if ((1<<icache_idx_size) == icacheSets){
+      icache_idx_size += 0;
   }
   else
   {
-    icache_index_size += 1;
+    icache_idx_size += 1;
   }
  
 
-  dcache_index_size = (uint32_t)log2(dcacheSets);
+  dcache_idx_size = (uint32_t)log2(dcacheSets);
 
-  if ((1<<dcache_index_size) == dcacheSets){
-      dcache_index_size += 0;
+  if ((1<<dcache_idx_size) == dcacheSets){
+      dcache_idx_size += 0;
   }
   else
   {
-    dcache_index_size += 1;
+    dcache_idx_size += 1;
   }
 
+  l2cache_idx_size = (uint32_t)log2(l2cacheSets);
 
 
-  l2cache_index_size = (uint32_t)log2(l2cacheSets);
-
-
-  if ((1<<l2cache_index_size) == l2cacheSets){
-      l2cache_index_size += 0;
+  if ((1<<l2cache_idx_size) == l2cacheSets){
+      l2cache_idx_size += 0;
   }
   else
   {
-    l2cache_index_size += 1;
+    l2cache_idx_size += 1;
   }
- 
-  icache_index_mask = ((1 << icache_index_size) - 1) << offset_size;
-  dcache_index_mask = ((1 << dcache_index_size) - 1) << offset_size;
-  l2cache_index_mask = ((1 << l2cache_index_size) - 1) << offset_size;
+  // 0s for non masked
+  icache_idx_mask = ((1 << icache_idx_size) - 1) << offset_size;
+  dcache_idx_mask = ((1 << dcache_idx_size) - 1) << offset_size;
+  l2cache_idx_mask = ((1 << l2cache_idx_size) - 1) << offset_size;
 
 }
 
@@ -302,20 +302,20 @@ icache_access(uint32_t addr)
 
   icacheRefs++;
 
-  // get offset, index, and tag trough masking and shifting
+  // get offset, idx, and tag trough masking and shifting
   uint32_t offset = offset_mask & addr;
-  uint32_t index = (icache_index_mask & addr) >> offset_size;
-  uint32_t tag = addr >> (icache_index_size + offset_size);
+  uint32_t idx = (icache_idx_mask & addr) >> offset_size;
+  uint32_t tag = addr >> (icache_idx_size + offset_size);
 
-  Block *p = icache[index].front;
+  Block *block_pop = icache[idx].front;
   //see if it is a hit
-  for(int i=0; i<icache[index].size; i++){
-    if(p->value == tag){ // Hit
-      Block *b = setPopIndex(&icache[index], i); // Get the hit block
-      setPush(&icache[index],  b); // move to end of set queue
+  for(int i=0; i<icache[idx].size; i++){
+    if(block_pop->value == tag){ // Hit
+      Block *b = setPopIndex(&icache[idx], i); // Get the hit block
+      setPush(&icache[idx],  b); // move to end of set queue
       return icacheHitTime;
     }
-    p = p->next;
+    block_pop = block_pop->next;
   }
  //it is a miss
   icacheMisses++;
@@ -324,11 +324,11 @@ icache_access(uint32_t addr)
   icachePenalties += penalty;
 
   // Miss replacement
-  Block *b = create_Block(tag);
+  Block *block_new = create_Block(tag);
 
-  if(icache[index].size == icacheAssoc) // sest filled, pop out the last element
-    setPop(&icache[index]);
-  setPush(&icache[index],  b);
+  if(icache[idx].size == icacheAssoc) // sest filled, pop out the last element
+    setPop(&icache[idx]);
+  setPush(&icache[idx],  block_new);
 
   return icacheHitTime + penalty;
 }
@@ -346,22 +346,21 @@ dcache_access(uint32_t addr)
   if(dcacheSets==0){
     return l2cache_access(addr);
   }
-
   dcacheRefs++ ;
- // get offset, index, and tag trough masking and shifting
+ // get offset, idx, and tag trough masking and shifting
   uint32_t offset = offset_mask & addr;
-  uint32_t index = (dcache_index_mask & addr) >> offset_size;
-  uint32_t tag = addr >> (dcache_index_size + offset_size);
+  uint32_t idx = (dcache_idx_mask & addr) >> offset_size;
+  uint32_t tag = addr >> (dcache_idx_size + offset_size);
 
-  Block *p = dcache[index].front;
+  Block *block_pop = dcache[idx].front;
 
-  for(int i=0; i<dcache[index].size; i++){
-    if(p->value == tag){ // Hit
-      Block *b = setPopIndex(&dcache[index], i); 
-      setPush(&dcache[index],  b); // move to end of sets
+  for(int i=0; i<dcache[idx].size; i++){
+    if(block_pop->value == tag){ // Hit
+      Block *b = setPopIndex(&dcache[idx], i); 
+      setPush(&dcache[idx],  b); // move to end of sets
       return dcacheHitTime;
     }
-    p = p->next;
+    block_pop = block_pop->next;
   }
 
   dcacheMisses += 1;
@@ -371,11 +370,11 @@ dcache_access(uint32_t addr)
   dcachePenalties += penalty;
 
   // Miss replacement - LRU
-  Block *b = create_Block(tag);
+  Block *block_new = create_Block(tag);
 
-  if(dcache[index].size == dcacheAssoc) // set filled, replace LRU (front of set queue)
-    setPop(&dcache[index]);
-  setPush(&dcache[index],  b);
+  if(dcache[idx].size == dcacheAssoc) // set filled, replace LRU (front of set queue)
+    setPop(&dcache[idx]);
+  setPush(&dcache[idx],  block_new);
 
   return dcacheHitTime + penalty;
 }
@@ -397,31 +396,31 @@ l2cache_access(uint32_t addr)
   l2cacheRefs ++;
 
   uint32_t offset = offset_mask & addr;
-  uint32_t index = (l2cache_index_mask & addr) >> offset_size;
-  uint32_t tag = addr >> (l2cache_index_size + offset_size);
+  uint32_t idx = (l2cache_idx_mask & addr) >> offset_size;
+  uint32_t tag = addr >> (l2cache_idx_size + offset_size);
 
-  Block *p = l2cache[index].front;
+  Block *block_pop = l2cache[idx].front;
 
-  for(int i=0; i<l2cache[index].size; i++){
-    if(p->value == tag){ // Hit
-      Block *b = setPopIndex(&l2cache[index], i); // Get the hit block
-      setPush(&l2cache[index],  b); // move to end of set queue
+  for(int i=0; i<l2cache[idx].size; i++){
+    if(block_pop->value == tag){ // Hit
+      Block *b = setPopIndex(&l2cache[idx], i); // Get the hit block
+      setPush(&l2cache[idx],  b); // move to end of set queue
       return l2cacheHitTime;
     }
-    p = p->next;
+    block_pop = block_pop->next;
   }
 
   l2cacheMisses += 1;
 
   // Miss replacement - LRU
-  Block *b = create_Block(tag);
+  Block *block_new = create_Block(tag);
   
-  if(l2cache[index].size == l2cacheAssoc){ // set filled, replace LRU 
+  if(l2cache[idx].size == l2cacheAssoc){ // set filled, replace LRU 
 
-    setPop(&l2cache[index]);
+    setPop(&l2cache[idx]);
     // else suppose it's a non-inclusive cache as for the requirement
   }
-  setPush(&l2cache[index], b);
+  setPush(&l2cache[idx], block_new);
 
   l2cachePenalties += memspeed;
   return l2cacheHitTime + memspeed;
